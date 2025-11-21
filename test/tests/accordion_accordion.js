@@ -3,7 +3,7 @@ const { By, Key } = require('selenium-webdriver');
 const assertAriaControls = require('../util/assertAriaControls');
 const assertAriaLabelledby = require('../util/assertAriaLabelledby');
 
-const exampleFile = 'accordion/accordion.html';
+const exampleFile = 'content/patterns/accordion/examples/accordion.html';
 
 const ex = {
   buttonSelector: '#ex1 button',
@@ -149,9 +149,8 @@ ariaTest(
     for (let expandIndex of [1, 2]) {
       await buttons[expandIndex].sendKeys(Key.ENTER);
       const panelDisplay = await panels[expandIndex].isDisplayed();
-      const buttonAria = await buttons[expandIndex].getAttribute(
-        'aria-expanded'
-      );
+      const buttonAria =
+        await buttons[expandIndex].getAttribute('aria-expanded');
 
       t.true(
         panelDisplay,
@@ -189,9 +188,8 @@ ariaTest(
     for (let expandIndex of [1, 2]) {
       await buttons[expandIndex].sendKeys(Key.SPACE);
       const panelDisplay = await panels[expandIndex].isDisplayed();
-      const buttonAria = await buttons[expandIndex].getAttribute(
-        'aria-expanded'
-      );
+      const buttonAria =
+        await buttons[expandIndex].getAttribute('aria-expanded');
 
       t.true(
         panelDisplay,

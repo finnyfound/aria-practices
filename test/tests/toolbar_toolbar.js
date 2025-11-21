@@ -3,13 +3,13 @@ const { By, Key } = require('selenium-webdriver');
 const assertAriaControls = require('../util/assertAriaControls');
 const assertAriaLabelExists = require('../util/assertAriaLabelExists');
 const assertAriaRoles = require('../util/assertAriaRoles');
-const assertAttributeDNE = require('../util/assertAttributeDNE');
 const assertAttributeValues = require('../util/assertAttributeValues');
 const assertRovingTabindex = require('../util/assertRovingTabindex');
 const assertHasFocus = require('../util/assertHasFocus');
 const assertAttributeCanBeToggled = require('../util/assertAttributeCanBeToggled');
+const translatePlatformKey = require('../util/translatePlatformKeys');
 
-const exampleFile = 'toolbar/toolbar.html';
+const exampleFile = 'content/patterns/toolbar/examples/toolbar.html';
 
 const ex = {
   buttonIconSelector: '#ex1 button span.fas',
@@ -36,7 +36,7 @@ const ex = {
     last: '#ex1 [role="radio"]:nth-child(3)',
   },
   tabbableItemAfterToolbarSelector: '#textarea1',
-  tabbableItemBeforeToolbarSelector: '[href="../../#kbd_roving_tabindex"]',
+  tabbableItemBeforeToolbarSelector: '[href$="#kbd_roving_tabindex"]',
   toolbarSelector: '#ex1 [role="toolbar"]',
   checkboxSelector: '#ex1 #checkbox',
   linkSelector: '#ex1 #link',
@@ -297,12 +297,24 @@ ariaTest(
 );
 
 ariaTest(
-  'Font family button has aria-expanded',
+  'Font family button has aria-expanded=false',
   exampleFile,
-  'toolbar-menubutton-aria-expanded',
+  'toolbar-menubutton-aria-expanded-false',
   async (t) => {
-    await assertAttributeDNE(t, ex.fontFamilyButtonSelector, 'aria-expanded');
+    await assertAttributeValues(
+      t,
+      ex.fontFamilyButtonSelector,
+      'aria-expanded',
+      'false'
+    );
+  }
+);
 
+ariaTest(
+  'Font family button has aria-expanded=true',
+  exampleFile,
+  'toolbar-menubutton-aria-expanded-true',
+  async (t) => {
     await (
       await t.context.session.findElement(By.css(ex.fontFamilyButtonSelector))
     ).click();
@@ -358,6 +370,15 @@ ariaTest(
     let menu = await t.context.session.findElement(By.css(ex.menuSelector));
 
     for (let i = 0; i < menuItems.length; i++) {
+      // Reset expanded state if necessary
+      // Note: This is a workaround. In the test environment, the menu button's
+      // aria-expanded state isn't being set back to false on a menu option
+      // click which requires this workaround.
+      // Issue tracked at https://github.com/w3c/aria-practices/issues/3331
+      // TODO: Remove once fixed
+      if ((await menuButton.getAttribute('aria-expanded')) === 'true') {
+        await menuButton.click();
+      }
       await menuButton.click();
       await t.context.session.wait(
         async function () {
@@ -1104,7 +1125,9 @@ ariaTest(
   'toolbar-button-enter-or-space',
   async (t) => {
     let textarea = await t.context.session.findElement(By.css('textarea'));
-    await textarea.sendKeys(Key.chord(Key.CONTROL, 'a'));
+    let selectAllKeys = translatePlatformKey([Key.CONTROL, 'a']);
+    let selectAllChord = Key.chord(...selectAllKeys);
+    await textarea.sendKeys(selectAllChord);
     let originalText = await textarea.getAttribute('value');
 
     const buttons = await t.context.queryElements(
@@ -1195,7 +1218,9 @@ ariaTest(
   'toolbar-button-enter-or-space',
   async (t) => {
     let textarea = await t.context.session.findElement(By.css('textarea'));
-    await textarea.sendKeys(Key.chord(Key.CONTROL, 'a'));
+    let selectAllKeys = translatePlatformKey([Key.CONTROL, 'a']);
+    let selectAllChord = Key.chord(...selectAllKeys);
+    await textarea.sendKeys(selectAllChord);
     let originalText = await textarea.getAttribute('value');
 
     const buttons = await t.context.queryElements(

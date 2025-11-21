@@ -6,13 +6,14 @@ const assertAriaRoles = require('../util/assertAriaRoles');
 const assertAriaSelectedAndActivedescendant = require('../util/assertAriaSelectedAndActivedescendant');
 const assertAttributeDNE = require('../util/assertAttributeDNE');
 
-const exampleFile = 'listbox/listbox-scrollable.html';
+const exampleFile = 'content/patterns/listbox/examples/listbox-scrollable.html';
 
 const ex = {
   listboxSelector: '#ex [role="listbox"]',
   optionSelector: '#ex [role="option"]',
-  numOptions: 26,
-  firstOptionSelector: '#ex #ss_elem_Np',
+  spanSelector: '#ex [role="option"] span.checkmark',
+  numOptions: 27,
+  firstOptionSelector: '#ex #ss_elem_None',
 };
 
 // Attributes
@@ -74,7 +75,16 @@ ariaTest(
   exampleFile,
   'option-role',
   async (t) => {
-    await assertAriaRoles(t, 'ex', 'option', 26, 'li');
+    await assertAriaRoles(t, 'ex', 'option', 27, 'li');
+  }
+);
+
+ariaTest(
+  'aria-hidden="true" on li > span elements',
+  exampleFile,
+  'span-aria-hidden',
+  async (t) => {
+    await assertAttributeValues(t, ex.spanSelector, 'aria-hidden', 'true');
   }
 );
 

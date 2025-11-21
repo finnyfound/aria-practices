@@ -12,23 +12,27 @@ const glob = require('glob');
 const cheerio = require('cheerio');
 const HTMLParser = require('node-html-parser');
 
-const exampleFilePath = path.join(__dirname, '..', 'coverage', 'index.html');
-const exampleTemplatePath = path.join(__dirname, 'coverage-report.template');
+const joinPaths = (...segments) => {
+  // Normalize paths to avoid backslash-based paths on Windows
+  return path.join(...segments).replace(/\\/g, '/');
+};
 
-const csvRoleFilePath = path.join(
+const coverageReportPath = joinPaths(
   __dirname,
-  '..',
-  'coverage',
-  'role-coverage.csv'
+  '../content/about/coverage-and-quality/coverage-and-quality-report.html'
 );
-const csvPropFilePath = path.join(
+const templatePath = joinPaths(__dirname, 'coverage-report.template');
+
+const csvRoleFilePath = joinPaths(
   __dirname,
-  '..',
-  'coverage',
-  'prop-coverage.csv'
+  '../content/about/coverage-and-quality/role-coverage.csv'
+);
+const csvPropFilePath = joinPaths(
+  __dirname,
+  '../content/about/coverage-and-quality/prop-coverage.csv'
 );
 
-let output = fs.readFileSync(exampleTemplatePath, function (err) {
+let output = fs.readFileSync(templatePath, function (err) {
   console.log('Error reading aria index:', err);
 });
 
@@ -320,7 +324,7 @@ function getUniqueRolesInExample(html, dataJS) {
           if (items.length) {
             roles.push(role);
           } else {
-            // Check Javascript
+            // Check JavaScript
 
             const hasRole1 = RegExp(".role = '" + role, 'g');
             const hasRole2 = RegExp('.role = "' + role, 'g');
@@ -385,7 +389,7 @@ function getUniqueRolesInExample(html, dataJS) {
       }
     }
   });
-  roles.forEach((role) => console.log('  [Example role]: ' + role));
+  // roles.forEach((role) => console.log('  [Example role]: ' + role));
   console.log('  [Example Roles]: ' + roles.length);
   return roles;
 }
@@ -445,24 +449,14 @@ function getExampleCodeId(html) {
 
 // Index roles, properties and states used in examples
 glob
-  .sync('examples/!(landmarks)/**/!(index).html', {
-    cwd: path.join(__dirname, '..'),
+  .sync('content/patterns/!(landmarks)/examples/**/!(index).html', {
+    cwd: joinPaths(__dirname, '..'),
     nodir: true,
   })
   .forEach(function (file) {
     console.log('[file]: ' + file);
     let dir = path.dirname(file);
     console.log('[ dir]: ' + dir);
-
-    // Ignore any files in the 'examples/js` directory
-    if (dir.indexOf('examples/js') >= 0) {
-      return;
-    }
-
-    // Ignore any files in the 'examples/template` directory
-    if (dir.indexOf('examples/coding-template') >= 0) {
-      return;
-    }
 
     if (file.toLowerCase().indexOf('deprecated') >= 0) {
       console.log('  [ignored]');
@@ -480,10 +474,11 @@ glob
       if (
         src.indexOf('examples.js') < 0 &&
         src.indexOf('highlight.pack.js') < 0 &&
-        src.indexOf('app.js') < 0
+        src.indexOf('app.js') < 0 &&
+        src.indexOf('skipto.js') < 0
       ) {
         console.log('  [script]: ' + src);
-        dataJS += fs.readFileSync(path.join(dir, src), 'utf8');
+        dataJS += fs.readFileSync(joinPaths(dir, src), 'utf8');
       }
       dataJS += ' ';
     }
@@ -498,12 +493,12 @@ glob
         href.indexOf('all.css') < 0
       ) {
         console.log('  [link]: ' + href);
-        dataCSS += fs.readFileSync(path.join(dir, href), 'utf8');
+        dataCSS += fs.readFileSync(joinPaths(dir, href), 'utf8');
       }
       dataCSS += ' ';
     }
 
-    let ref = path.join('..', file);
+    let ref = joinPaths('../../..', file);
     let title = html
       .querySelector('title')
       .textContent.split('|')[0]
@@ -524,10 +519,8 @@ glob
       highContrast: data.toLowerCase().indexOf('high contrast') > 0,
       svgHTML: html.querySelectorAll('svg').length,
       svgCSS: getNumberOfReferences(dataCSS, 'svg', true),
-      contentCSS: getNumberOfReferences(dataCSS, 'content'),
-      beforeCSS: getNumberOfReferences(dataCSS, '::before'),
-      afterCSS: getNumberOfReferences(dataCSS, '::after'),
-      forcedColorAdjust: getNumberOfReferences(dataCSS, 'forced-color-adjust'),
+      forcedColors: getNumberOfReferences(dataCSS, 'forced-colors'),
+      currentColor: getNumberOfReferences(dataCSS, 'currentColor', true),
 
       svgJS: getNumberOfReferences(dataJS, 'svg', true),
       classJS: getNumberOfReferences(dataJS, 'constructor\\('),
@@ -553,18 +546,19 @@ glob
       pointerUp: getNumberOfReferences(dataJS, 'pointerup', true),
     };
 
-    (example.documentationRoles = addExampleToRoles(getRoles(html), example)),
-      console.log(
-        '  [Documentation Roles]: ' + example.documentationRoles.length
-      );
-    (example.documentationAttributes = addExampleToPropertiesAndStates(
+    example.documentationRoles = addExampleToRoles(getRoles(html), example);
+    console.log(
+      '  [Documentation Roles]: ' + example.documentationRoles.length
+    );
+
+    example.documentationAttributes = addExampleToPropertiesAndStates(
       getPropertiesAndStates(html),
       example
-    )),
-      console.log(
-        '  [Documentation aria-* Attributes]: ' +
-          example.documentationAttributes.length
-      );
+    );
+    console.log(
+      '  [Documentation aria-* Attributes]: ' +
+        example.documentationAttributes.length
+    );
 
     indexOfExamples.push(example);
   });
@@ -609,7 +603,7 @@ function addGuidanceToPropertyOrState(prop, url, label, id) {
 }
 
 function getRolesPropertiesAndStatesFromHeaders(html, url) {
-  let dataHeadings = html.querySelectorAll('h2, h3, h4, h4, h5, h6');
+  let dataHeadings = html.querySelectorAll('h1, h2, h3, h4, h4, h5, h6');
 
   for (let i = 0; i < dataHeadings.length; i++) {
     let dataHeading = dataHeadings[i];
@@ -683,70 +677,79 @@ function getRolesPropertiesAndStatesFromGuidance(html, url) {
   getPropertiesAndStatesFromDataAttributesOnHeaders(html, url);
 }
 
-let data = fs.readFileSync(
-  path.join(__dirname, '../aria-practices.html'),
-  'utf8'
-);
+const patternFiles = glob.sync('content/patterns/!(landmarks)/*-pattern.html', {
+  cwd: joinPaths(__dirname, '..'),
+});
 
-let html = HTMLParser.parse(data);
+const practiceFiles = glob.sync('content/practices/*/*-practice.html', {
+  cwd: joinPaths(__dirname, '..'),
+});
 
-getRolesPropertiesAndStatesFromGuidance(html, '../aria-practices.html');
+const guidanceFiles = [...patternFiles, ...practiceFiles];
+
+guidanceFiles.forEach(function (file) {
+  let data = fs.readFileSync(file, 'utf8');
+
+  let html = HTMLParser.parse(data);
+
+  getRolesPropertiesAndStatesFromGuidance(html, joinPaths('../../../', file));
+});
 
 // Add landmark examples, since they are a different format
 addLandmarkRole(
   ['banner'],
   false,
   'Banner Landmark',
-  '../examples/landmarks/banner.html'
+  '../../../content/patterns/landmarks/examples/banner.html'
 );
 
 addLandmarkRole(
   ['complementary'],
   true,
   'Complementary Landmark',
-  '../examples/landmarks/complementary.html'
+  '../../../content/patterns/landmarks/examples/complementary.html'
 );
 
 addLandmarkRole(
   ['contentinfo'],
   false,
   'Contentinfo Landmark',
-  '../examples/landmarks/contentinfo.html'
+  '../../../content/patterns/landmarks/examples/contentinfo.html'
 );
 
 addLandmarkRole(
   ['form'],
   true,
   'Form Landmark',
-  '../examples/landmarks/form.html'
+  '../../../content/patterns/landmarks/examples/form.html'
 );
 
 addLandmarkRole(
   ['main'],
   true,
   'Main Landmark',
-  '../examples/landmarks/main.html'
+  '../../../content/patterns/landmarks/examples/main.html'
 );
 
 addLandmarkRole(
   ['navigation'],
   true,
   'Navigation Landmark',
-  '../examples/landmarks/navigation.html'
+  '../../../content/patterns/landmarks/examples/navigation.html'
 );
 
 addLandmarkRole(
   ['region'],
   true,
   'Region Landmark',
-  '../examples/landmarks/region.html'
+  '../../../content/patterns/landmarks/examples/region.html'
 );
 
 addLandmarkRole(
   ['search'],
   true,
   'Search Landmark',
-  '../examples/landmarks/search.html'
+  '../../../content/patterns/landmarks/examples/search.html'
 );
 
 function getListItem(item) {
@@ -759,7 +762,6 @@ function getListItem(item) {
 }
 
 function getListHTML(list) {
-  //  let html = '<abbr title="none" style="color: gray">-</abbr>';
   let html = '';
 
   if (list.length === 1) {
@@ -867,8 +869,7 @@ let PropsWithNoExamples = sortedPropertiesAndStates.reduce(function (
   }
 
   return `${set}`;
-},
-'');
+}, '');
 
 $('#props_with_no_examples_ul').html(PropsWithNoExamples);
 $('.props_with_no_examples_count').html(countNoExamples.toString());
@@ -895,8 +896,7 @@ let PropsWithOneExample = sortedPropertiesAndStates.reduce(function (
   }
 
   return `${set}`;
-},
-'');
+}, '');
 
 $('#props_with_one_example_tbody').html(PropsWithOneExample);
 $('.props_with_one_example_count').html(countOneExample.toString());
@@ -920,8 +920,7 @@ let PropsWithMoreThanOneExample = sortedPropertiesAndStates.reduce(function (
   }
 
   return `${set}`;
-},
-'');
+}, '');
 
 $('#props_with_more_than_one_tbody').html(PropsWithMoreThanOneExample);
 $('.props_with_more_than_one_examples_count').html(
@@ -1002,17 +1001,14 @@ let IndexOfExampleCodingPractices = indexOfExamples.reduce(function (
             <td>${example.documentationAttributes.length}</td>
             <td>${checkDocumentation}</td>
           </tr>`;
-},
-'');
+}, '');
 
 let IndexOfExampleGraphics = indexOfExamples.reduce(function (set, example) {
   let count = example.svgHTML;
   count += example.svgCSS;
   count += example.svgJS;
-  count += example.forcedColorAdjust;
-  count += example.beforeCSS;
-  count += example.afterCSS;
-  count += example.contentCSS;
+  count += example.forcedColors;
+  count += example.currentColor;
 
   if (count === 0) {
     return `${set}`;
@@ -1023,10 +1019,8 @@ let IndexOfExampleGraphics = indexOfExamples.reduce(function (set, example) {
             <td>${htmlYesOrNo(example.svgHTML)}</td>
             <td>${htmlYesOrNo(example.svgCSS)}</td>
             <td>${htmlYesOrNo(example.svgJS)}</td>
-            <td>${htmlYesOrNo(example.forcedColorAdjust)}</td>
-            <td>${htmlYesOrNo(example.beforeCSS)}</td>
-            <td>${htmlYesOrNo(example.afterCSS)}</td>
-            <td>${htmlYesOrNo(example.contentCSS)}</td>
+            <td>${htmlYesOrNo(example.forcedColors)}</td>
+            <td>${htmlYesOrNo(example.currentColor)}</td>
           </tr>`;
 }, '');
 
@@ -1060,8 +1054,7 @@ let IndexOfExampleMousePointer = indexOfExamples.reduce(function (
             <td>${htmlYesOrNo(mouseCount)}</td>
             <td>${htmlYesOrNo(pointerCount)}</td>
           </tr>`;
-},
-'');
+}, '');
 
 let countClass = indexOfExamples.reduce(function (set, example) {
   return set + (example.classJS ? 1 : 0);
@@ -1116,8 +1109,18 @@ let countPointer = indexOfExamples.reduce(function (set, example) {
   return set + (count ? 1 : 0);
 }, 0);
 
+/*
 let countForcedColorAdjust = indexOfExamples.reduce(function (set, example) {
   return set + (example.forcedColorAdjust ? 1 : 0);
+}, 0);
+*/
+
+let countForcedColors = indexOfExamples.reduce(function (set, example) {
+  return set + (example.forcedColors ? 1 : 0);
+}, 0);
+
+let countCurrentColor = indexOfExamples.reduce(function (set, example) {
+  return set + (example.currentColor ? 1 : 0);
 }, 0);
 
 $('#example_coding_practices_tbody').html(IndexOfExampleCodingPractices);
@@ -1127,7 +1130,8 @@ $('#example_mouse_pointer_tbody').html(IndexOfExampleMousePointer);
 $('#example_summary_total').html(indexOfExamples.length);
 $('#example_summary_hc').html(countHighContrast);
 $('#example_summary_svg').html(countSVG);
-$('#example_summary_force_color').html(countForcedColorAdjust);
+$('#example_summary_force_colors').html(countForcedColors);
+$('#example_summary_current_color').html(countCurrentColor);
 $('#example_summary_keycode').html(countKeyCode);
 $('#example_summary_which').html(countWhich);
 $('#example_summary_class').html(countClass);
@@ -1143,7 +1147,7 @@ const result = $.html()
     '<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">\n'
   );
 
-fs.writeFile(exampleFilePath, result, function (err) {
+fs.writeFile(coverageReportPath, result, function (err) {
   if (err) {
     console.log('Error saving updated aria practices:', err);
   }

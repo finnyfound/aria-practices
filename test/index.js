@@ -17,7 +17,7 @@ if (!coverageReportRun) {
   test.before(async () => {
     geckodriver = await startGeckodriver(1022, 12 * 1000);
     session = new webdriver.Builder()
-      .usingServer('http://localhost:' + geckodriver.port)
+      .usingServer('http://127.0.0.1:' + geckodriver.port)
       .withCapabilities({
         'moz:firefoxOptions': {
           args: firefoxArgs,
@@ -76,7 +76,7 @@ ariaTest.failing = (desc, page, testId, body) => {
 };
 
 const _ariaTest = (desc, page, testId, body, failing) => {
-  const absPath = path.resolve(__dirname, '..', 'examples', ...page.split('/'));
+  const absPath = path.resolve(__dirname, '..', ...page.split('/'));
   const url = 'file://' + absPath;
   const selector = '[data-test-id="' + testId + '"]';
 

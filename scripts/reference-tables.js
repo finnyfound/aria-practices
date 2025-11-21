@@ -12,7 +12,13 @@ const glob = require('glob');
 const cheerio = require('cheerio');
 const HTMLParser = require('node-html-parser');
 
-const exampleFilePath = path.join(__dirname, '..', 'examples', 'index.html');
+const exampleFilePath = path.join(
+  __dirname,
+  '..',
+  'content',
+  'index',
+  'index.html'
+);
 const exampleTemplatePath = path.join(__dirname, 'reference-tables.template');
 
 let output = fs.readFileSync(exampleTemplatePath, function (err) {
@@ -155,6 +161,7 @@ const ariaPropertiesAndStates = [
 
 let indexOfRoles = {};
 let indexOfPropertiesAndStates = {};
+const indexOfExperimentalContent = [];
 
 console.log('Generating index...');
 
@@ -203,6 +210,10 @@ function getPropertiesAndStates(html) {
   return propertiesAndStates;
 }
 
+function addExampleToExperimentalContent(example) {
+  indexOfExperimentalContent.push(example);
+}
+
 function addExampleToRoles(roles, example) {
   for (let i = 0; i < roles.length; i++) {
     let role = roles[i];
@@ -246,7 +257,7 @@ function addLandmarkRole(landmark, hasLabel, title, ref) {
 }
 
 glob
-  .sync('examples/!(landmarks)/**/!(index).html', {
+  .sync('content/patterns/!(landmarks)/examples/!(index).html', {
     cwd: path.join(__dirname, '..'),
     nodir: true,
   })
@@ -262,7 +273,11 @@ glob
 
     let html = HTMLParser.parse(data);
 
-    let ref = file.replace('examples/', '');
+    const isExperimental =
+      html.querySelector('main')?.getAttribute('data-content-phase') ===
+      'experimental';
+
+    let ref = file.replace('content', '..');
     let title = html
       .querySelector('title')
       .textContent.split('|')[0]
@@ -277,34 +292,63 @@ glob
       highContrast: data.toLowerCase().indexOf('high contrast') > 0,
     };
 
-    addExampleToRoles(getRoles(html), example);
-    addExampleToPropertiesAndStates(getPropertiesAndStates(html), example);
+    if (isExperimental) {
+      addExampleToExperimentalContent(example);
+    } else {
+      addExampleToRoles(getRoles(html), example);
+      addExampleToPropertiesAndStates(getPropertiesAndStates(html), example);
+    }
   });
 
 // Add landmark examples, since they are a different format
-addLandmarkRole(['banner'], false, 'Banner Landmark', 'landmarks/banner.html');
+addLandmarkRole(
+  ['banner'],
+  false,
+  'Banner Landmark',
+  '../patterns/landmarks/examples/banner.html'
+);
 addLandmarkRole(
   ['complementary'],
   true,
   'Complementary Landmark',
-  'landmarks/complementary.html'
+  '../patterns/landmarks/examples/complementary.html'
 );
 addLandmarkRole(
   ['contentinfo'],
   false,
   'Contentinfo Landmark',
-  'landmarks/contentinfo.html'
+  '../patterns/landmarks/examples/contentinfo.html'
 );
-addLandmarkRole(['form'], true, 'Form Landmark', 'landmarks/form.html');
-addLandmarkRole(['main'], true, 'Main Landmark', 'landmarks/main.html');
+addLandmarkRole(
+  ['form'],
+  true,
+  'Form Landmark',
+  '../patterns/landmarks/examples/form.html'
+);
+addLandmarkRole(
+  ['main'],
+  true,
+  'Main Landmark',
+  '../patterns/landmarks/examples/main.html'
+);
 addLandmarkRole(
   ['navigation'],
   true,
   'Navigation Landmark',
-  'landmarks/navigation.html'
+  '../patterns/landmarks/examples/navigation.html'
 );
-addLandmarkRole(['region'], true, 'Region Landmark', 'landmarks/region.html');
-addLandmarkRole(['search'], true, 'Search Landmark', 'landmarks/search.html');
+addLandmarkRole(
+  ['region'],
+  true,
+  'Region Landmark',
+  '../patterns/landmarks/examples/region.html'
+);
+addLandmarkRole(
+  ['search'],
+  true,
+  'Search Landmark',
+  '../patterns/landmarks/examples/search.html'
+);
 
 function exampleListItem(item) {
   let highContrast = '';
@@ -358,6 +402,19 @@ let examplesByProps = sortedPropertiesAndStates.reduce(function (set, prop) {
             <td>${examplesHTML}</td>
           </tr>`;
 }, '');
+
+const examplesExperimental = indexOfExperimentalContent
+  .map(exampleListItem)
+  .join('');
+
+if (examplesExperimental.length === 0) {
+  // Do no display the experimental section if there are no experimental examples
+  $('#examples_experimental').remove();
+  // Remove the <li> element containing the link to Experimental Examples
+  $('a[href="#examples_experimental_label"]').parent().remove();
+} else {
+  $('#examples_experimental_ul').html(examplesExperimental);
+}
 
 $('#examples_by_props_tbody').html(examplesByProps);
 

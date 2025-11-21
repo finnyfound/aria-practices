@@ -6,7 +6,7 @@ const assertAriaRoles = require('../util/assertAriaRoles');
 const assertAriaSelectedAndActivedescendant = require('../util/assertAriaSelectedAndActivedescendant');
 const assertAttributeDNE = require('../util/assertAttributeDNE');
 
-const exampleFile = 'listbox/listbox-grouped.html';
+const exampleFile = 'content/patterns/listbox/examples/listbox-grouped.html';
 
 const ex = {
   listboxSelector: '#ex [role="listbox"]',
@@ -97,6 +97,20 @@ ariaTest(
 );
 
 ariaTest(
+  'aria-hidden="true" on li > span.checkmark elements',
+  exampleFile,
+  'span-aria-hidden',
+  async (t) => {
+    await assertAttributeValues(
+      t,
+      `${ex.optionSelector} span.checkmark`,
+      'aria-hidden',
+      'true'
+    );
+  }
+);
+
+ariaTest(
   '"aria-selected" on option elements',
   exampleFile,
   'option-aria-selected',
@@ -162,11 +176,11 @@ ariaTest(
 );
 
 ariaTest(
-  'DOWN ARROW sends initial focus to the first option',
+  'DOWN ARROW moves focus to the second option',
   exampleFile,
   'key-down-arrow',
   async (t) => {
-    // Sending the key down arrow will put focus on the first option if no options are focused
+    // Sending the key down arrow will move focus to the second option.
     const listbox = await t.context.session.findElement(
       By.css(ex.listboxSelector)
     );
@@ -176,7 +190,7 @@ ariaTest(
       t,
       ex.listboxSelector,
       ex.optionSelector,
-      0
+      1
     );
   }
 );

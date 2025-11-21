@@ -7,13 +7,15 @@ const assertAriaSelectedAndActivedescendant = require('../util/assertAriaSelecte
 const assertAriaActivedescendant = require('../util/assertAriaActivedescendant');
 const assertAttributeDNE = require('../util/assertAttributeDNE');
 
-const exampleFile = 'listbox/listbox-rearrangeable.html';
+const exampleFile =
+  'content/patterns/listbox/examples/listbox-rearrangeable.html';
 
 const ex = {
   1: {
     listboxSelector: '#ex1 [role="listbox"]',
     importantSelector: '#ex1 [role="listbox"]#ss_imp_list',
     optionSelector: '#ex1 [role="option"]',
+    spanSelector: '#ex1 span.checkmark',
     numOptions: 10,
     firstOptionSelector: '#ex1 #ss_opt1',
     lastOptionSelector: '#ex1 #ss_opt10',
@@ -22,6 +24,7 @@ const ex = {
     listboxSelector: '#ex2 [role="listbox"]',
     availableSelector: '#ex2 [role="listbox"]#ms_imp_list',
     optionSelector: '#ex2 [role="option"]',
+    spanSelector: '#ex2 span.checkmark',
     numOptions: 10,
     firstOptionSelector: '#ex2 #ms_opt1',
     lastOptionSelector: '#ex2 #ms_opt10',
@@ -118,6 +121,16 @@ ariaTest(
         ' for items: ' +
         ex.listboxSelector
     );
+  }
+);
+
+ariaTest(
+  'aria-hidden="true" on span[class=checkmark] elements',
+  exampleFile,
+  'span-aria-hidden',
+  async (t) => {
+    await assertAttributeValues(t, ex[1].spanSelector, 'aria-hidden', 'true');
+    await assertAttributeValues(t, ex[2].spanSelector, 'aria-hidden', 'true');
   }
 );
 

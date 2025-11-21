@@ -5,7 +5,8 @@ const assertAttributeValues = require('../util/assertAttributeValues');
 const assertTabOrder = require('../util/assertTabOrder');
 const assertHasFocus = require('../util/assertHasFocus');
 
-const exampleFile = 'disclosure/disclosure-navigation-hybrid.html';
+const exampleFile =
+  'content/patterns/disclosure/examples/disclosure-navigation-hybrid.html';
 
 const ex = {
   buttonSelector: '#exTest button',
@@ -81,7 +82,11 @@ ariaTest(
 
       if (links.length > 0) {
         await buttons[b].click();
+
         await links[0].click();
+        // Add a small delay here to ensure that the scroll to focus event
+        // has time to complete and doesn't interfere with the next assertion
+        await t.context.session.sleep(300);
 
         t.is(
           await links[0].getAttribute('aria-current'),
